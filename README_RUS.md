@@ -14,7 +14,7 @@
     3.2. [Part 2](#part-2-дополнительно-реализация-библиотеки-s21_containersplush)  
     3.3. [Part 3](#part-3-дополнительно-реализация-модифицированных-методов-emplace)
 
-
+myMap.emplace(3, "monitor/display");myMap.emplace(3, "monitor/display");myMap.emplace(3, "monitor/display");myMap.emplace(3, "monitor/display");
 ## Chapter I
 
 ![s21_containers](misc/images/s21_containers.png)
