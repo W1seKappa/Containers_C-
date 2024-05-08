@@ -1,3 +1,6 @@
+#ifndef S21_LIST_H
+#define S21_LIST_H
+
 #include <iostream>
 #include <limits>
 #include <initializer_list>
@@ -5,26 +8,25 @@
 namespace s21 {
     template <typename T>
     class list {
-    public:
-        // List Member type
+        public:
         using value_type = T;
-        using reference = T&; // ссылка на тип Т
+        using reference = T&;
         using const_reference = const T&;
         using size_type = std::size_t;
-    private:
+        private:
         struct Node {
             value_type data;
-            Node *previos;
-            Node *next;
-            Node(const_reference val) : data(val), previos(nullptr), next(nullptr) {}
+            Node* previos;
+            Node* next;
+            Node(const value_type &data) : data(data), previos(nullptr), next(nullptr) {}
         };
-        Node *head;
-        Node *tail;
-        Node *end_;
+        Node* head;
+        Node* tail;
+        Node* end_;
         size_type size_;
 
-    public:
-        // List Functions
+        public:
+        // List Func
         list() : head(nullptr), tail(nullptr), end_(nullptr), size_(0) {
             end_ = new Node(size_);
             change_end();
@@ -57,92 +59,35 @@ namespace s21 {
             clear();
             delete end_;
         }
-        list& operator=(list &&l) {
+        list& operator=(list&& l) {
             if (this != &l) {
                 clear();
                 swap(l);
             }
             return *this;
         }
-        // List Element access
+
+        // List Elements Access
         const_reference front() {
             return !head ? end_->data : head->data;
         }
         const_reference back() {
             return !tail ? end_->data : tail->data;
         }
-        // Support
 
-        
-        
-        void print_list() {
-            std::cout << "[";
-            for (iterator i = begin(); i != end(); i++) {
-                std::cout << *i;
-                if ((i + 1) != end()) {
-                    std::cout << ", ";
-                }
-            }
-            std::cout << "]\n";
+        // List Capacity
+
+        bool empty() {
+            return size_ == 0;
         }
-        void copy(const list& l) {
-            Node* current = l.head;
-            for(size_type i = 0; i != l.size_; i++) {
-                push_back(current->data);
-                current = current->next;
-            }
+        size_type size() {
+            return size_;
         }
-        void change_end() {
-            if (end_) {
-                end_->next = head;
-                end_->previos = tail;
-                end_->data = size();
-                if (head) {
-                    head->previos = end_;
-                }
-                if (tail) {
-                    tail->next = end_;
-                }
-            }
+        size_type max_size() {
+            return (std::numeric_limits<size_type>::max() / sizeof(Node));
         }
+
         // List Modifiers
-
-        
-        void swap(list& other) {
-            using std::swap;
-            swap(this->head, other.head);
-            swap(this->tail, other.tail);
-            swap(this->size_, other.size_);
-        }
-        void pop_front() {
-            if (empty()) {
-                throw std::out_of_range("List is empty");
-            }
-            Node* first_node = head;
-            if (size_ == 1) {
-                head = nullptr;
-                tail = nullptr;
-            } else {
-                head = first_node->next;
-                head->previos = nullptr;
-            }
-            delete first_node;
-            size_--;
-            change_end();
-        }
-        void push_front(const_reference value) {
-            Node* front_new_node = new Node(value);
-            if (empty()) {
-                head = front_new_node;
-                tail = front_new_node;
-            } else {
-                front_new_node->next = head;
-                head->previos = front_new_node;
-                head = front_new_node;
-            }
-            size_++;
-            change_end();
-        }
         void clear() {
             while(empty() == false) {
                 pop_back();
@@ -177,30 +122,106 @@ namespace s21 {
             size_--;
             change_end();
         }
-        // List Capacity
-        bool empty() {
-            return size_ == 0;
-        }
-        size_type size() {
-            return size_;
-        }
-        size_type max_size() {
-            return (std::numeric_limits<size_type>::max() / sizeof(Node));
+
+        void push_front(const_reference value) {
+            Node* front_new_node = new Node(value);
+            if (empty()) {
+                head = front_new_node;
+                tail = front_new_node;
+            } else {
+                front_new_node->next = head;
+                head->previos = front_new_node;
+                head = front_new_node;
+            }
+            size_++;
+            change_end();
         }
 
-        template<typename value_type>
+        void pop_front() {
+            if (empty()) {
+                throw std::out_of_range("List is empty");
+            }
+            Node* first_node = head;
+            if (size_ == 1) {
+                head = nullptr;
+                tail = nullptr;
+            } else {
+                head = first_node->next;
+                head->previos = nullptr;
+            }
+            delete first_node;
+            size_--;
+            change_end();
+        }
+        void swap(list& other) {
+            using std::swap;
+            swap(this->head, other.head);
+            swap(this->tail, other.tail);
+            swap(this->size_, other.size_);
+        }
+        void merge(list& other) {
+            if (!this->empty() && !other.empty()) {
+                iterator iterat_this = this->begin();
+                iterator iterat_other = other.begin();
+                while (iterat_this != this->end()) {
+                    if (iterat_other != other.end()) {
+                        if (iterat_this.ptr_->data >= iterat_other.ptr_->data) {
+                            this->insert(iterat_this, iterat_other.ptr_->data);
+                            iterat_other++;
+                        } else {
+                            iterat_this++;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                while (iterat_other != other.end()) {
+                    this->insert(iterat_this, iterat_other.ptr_->data);
+                    iterat_other++;
+                }
+            } else if (this->empty() && !other.empty()) {
+                this->copy(other);
+            }
+            other.clear();
+        }
+        void reverse() {
+            if (!this->empty()) {
+                size_type step = 0;
+                for (iterator i = this->begin(); step <= this->size(); i++) {
+                    step++;
+                    std::swap(i.ptr_->previos, i.ptr_->next);
+                }
+                std::swap(head, tail);
+            }
+        }
+        void unique() {
+            if (!this->empty()) {
+                for (iterator i = this->begin(); i != this->end(); i++) {
+                    if (i.ptr_->data == i.ptr_->previos->data) {
+                        iterator i_del = (i - 1);
+                        this->erase(i_del);
+                    }
+                }
+            }
+        }
+        void sort() {
+            if (size_ > 1) {
+                quick_sort_list(begin(), --end());
+            }
+        }
+
+        template <typename value_type>
         class ListIterator {
-        public:
+            public:
             ListIterator() { ptr_ = nullptr; }
             ListIterator(Node* ptr) : ptr_(ptr) {};
 
             reference operator*() {
                 if (!this->ptr_) {
-                   throw std::invalid_argument("Value is nullptr"); 
+                    throw std::invalid_argument("Value is nullptr");
                 }
                 return this->ptr_->data;
             }
-
             ListIterator operator++(int) {
                 ptr_ = ptr_->next;
                 return *this;
@@ -242,20 +263,23 @@ namespace s21 {
 
             bool operator==(ListIterator other) { return this->ptr_ == other.ptr_; }
             bool operator!=(ListIterator other) { return this->ptr_ != other.ptr_; }
-        private:
+            private:
             Node* ptr_ = nullptr;
             friend class list<T>;
         };
-
         template <typename value_type>
         class ListConstIterator : public ListIterator<T> {
             public:
             ListConstIterator(ListIterator<T> other) : ListIterator<T>(other) {}
             const T& operator*() { return ListIterator<T>::operator*(); }
         };
+        
+
+        // List Member type
 
         using iterator = ListIterator<T>;
         using const_iterator = ListConstIterator<T>;
+
 
         // List Iterators
         iterator begin() {
@@ -264,16 +288,15 @@ namespace s21 {
         iterator end() {
             return iterator(end_);
         }
-
         const_iterator begin() const {
             return !head ? const_iterator(end_) : const_iterator(head);
         }
-
         const_iterator end() const {
             return const_iterator(end_);
         }
 
-        //List Modifiers
+        // List Modifiers
+
         iterator insert(iterator pos, const_reference value) {
             Node* current = pos.ptr_;
             Node* add = new Node(value);
@@ -322,31 +345,6 @@ namespace s21 {
             }
             change_end();
         }
-        void merge(list& other) {
-            if (!this->empty() && !other.empty()) {
-                iterator iterat_this = this->begin();
-                iterator iterat_other = other.begin();
-                while (iterat_this != this->end()) {
-                    if (iterat_other != other.end()) {
-                        if (iterat_this.ptr_->data >= iterat_other.ptr_->data) {
-                            this->insert(iterat_this, iterat_other.ptr_->data);
-                            iterat_other++;
-                        } else {
-                            iterat_this++;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                while (iterat_other != other.end()) {
-                    this->insert(iterat_this, iterat_other.ptr_->data);
-                    iterat_other++;
-                }
-            } else if (this->empty() && !other.empty()) {
-                this->copy(other);
-            }
-            other.clear();
-        }
         void splice(const_iterator pos, list& other) {
             if (!other.empty()) {
                 for (iterator i = other.begin(); i != other.end(); i++) {
@@ -355,28 +353,22 @@ namespace s21 {
                 other.clear();
             }
         }
-        void reverse() {
-            if (!this->empty()) {
-                size_type step = 0;
-                for (iterator i = this->begin(); step <= this->size(); i++) {
-                    step++;
-                    std::swap(i.ptr_->previos, i.ptr_->next);
-                }
-                std::swap(head, tail);
-            }
-        }
-        void unique() {
-            if (!this->empty()) {
-                for (iterator i = this->begin(); i != this->end(); i++) {
-                    if (i.ptr_->data == i.ptr_->previos->data) {
-                        iterator i_del = (i - 1);
-                        this->erase(i_del);
-                    }
-                }
-            }
-        }
 
-        // Support
+        private:
+        //Supp
+        void change_end() {
+            if (end_) {
+                end_->next = head;
+                end_->previos = tail;
+                end_->data = size();
+                if (head) {
+                    head->previos = end_;
+                }
+                if (tail) {
+                    tail->next = end_;
+                }
+            }
+        }
         void quick_sort_list(iterator first, iterator last) {
             if (first == last || first == end_ || last == end_ || first == tail) {
                 return;
@@ -398,33 +390,24 @@ namespace s21 {
             std::swap(i.ptr_->data, last.ptr_->data);
             return i;
         }
-        void sort() {
-            if (size_ > 1) {
-                quick_sort_list(begin(), --end());
+        void copy(const list& l) {
+            Node* current = l.head;
+            for(size_type i = 0; i != l.size_; i++) {
+                push_back(current->data);
+                current = current->next;
             }
         }
 
+        void print_list() {
+            std::cout << "[";
+            for (iterator i = begin(); i != end(); i++) {
+                std::cout << *i;
+                if ((i + 1) != end()) {
+                    std::cout << ", ";
+                }
+            }
+            std::cout << "]\n";
+        }
     };
- };
-
-
-int main() {
-    s21::list<int> spisok; // простой конструктор
-    s21::list<int> spisok2(4); // создание определенного размера
-    s21::list<int> spisok3 = {1, 4, 35, 4, 5, 9, 10, 10}; // создание с инициализацией
-    s21::list<int> spisok4 = {10, 11, 12, 31};
-    // spisok3.push_front(10);
-    // spisok3.pop_front();
-    // std::cout << spisok3.front() << std::endl;
-    // spisok3.erase(spisok3.begin());
-    // std::cout << spisok3.front();
-    // spisok3.merge(spisok4);
-    // std::cout << spisok3.back() << std::endl;
-    // spisok3.reverse();
-    // std::cout << spisok3.front() << " " << spisok3.back();
-    spisok3.print_list();
-    // spisok3.unique();
-    spisok3.sort();
-    spisok3.print_list();
-    return 0;
 }
+#endif
